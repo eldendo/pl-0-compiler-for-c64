@@ -20,7 +20,7 @@
 180"   !138;
 190"   b := prom;
 200"   !b; 
-210"   test := a;
+210"   test := 3;
 220"   call double
 230" end.
 
@@ -36,19 +36,18 @@
 5300 gosub 5500:rem initialisation
 5310 gosub 5600:rem getch
 5320 gosub 5800:rem getsym
-5330 print ">>> start parsing program <<<"
 5340 gosub 6200:rem block
-5350 ex$=".":gosub 5400:rem expect
-5360 print "parsing sussesfull"
+5350 if sy$<>"." then print "error: '.' expected but ";sy$;"
+5360 print:print "parsing succesfull"
 5370 end
 
 5400 rem *** expect ***
-5410 if ex$<>sy$ then print "error: ";er$;" expected but ";sy$;" found":stop
+5410 if ex$<>sy$ then print "error: '";ex$;"' expected but '";sy$;"' found":stop
 5420 gosub 5800: rem getsym
 5430 return
 
 5500 rem *** initialisation ***
-5510 print "initialising..."
+5510 print "initialising...":print
 5520 read nrw
 5530 dim rw$(nrw-1)
 5530 for i=0 to nrw-1: read rw$(i):next
@@ -92,7 +91,6 @@
 6199 rem ---------- parser ----------
 
 6200 rem *** block ***
-6210 print ">>>entering block<<<"
 6220 if sy$="const" then gosub 6300
 6230 if sy$="var" then gosub 6500
 6240 if sy$="procedure" then gosub 6700: goto 6240
@@ -100,7 +98,6 @@
 6260 return
 
 6300 rem ** const **
-6305 print ">>>found constant declaration<<<"
 6310 gosub 5800: rem getsym
 6320 ex$="id":gosub 5400: rem expect
 6340 ex$="=":gosub 5400
@@ -110,7 +107,6 @@
 6410 return
 
 6500 rem ** var **
-6505 print ">>>found var declaration<<<"
 6510 gosub 5800: rem getsym
 6520 ex$="id":gosub 5400: rem expect
 6540 if sy$="," then 6510
@@ -118,7 +114,6 @@
 6570 return
 
 6700 rem ** procedure **
-6705 print ">>>found procedure declaration<<<"
 6710 gosub 5800: rem getsym
 6720 ex$="id":gosub 5400: rem expect
 6750 ex$=";":gosub 5400
@@ -161,27 +156,52 @@
 7700 rem ** begin **
 7710 gosub 5800: rem getsym
 7720 gosub 7000: rem statement
-7730 if sy$=";" then 6710
+7730 if sy$=";" then 7710
 7740 ex$="end":gosub 5400: rem expect
 7750 return
 
 7800 rem ** if **
 7810 gosub 5800: rem getsym
-7820 gosub ...: rem condition
+7820 gosub 8300: rem condition
 7830 ex$="then":gosub 5400 :rem expect
 7840 gosub 7000: rem statement
 7850 return
 
 7900 rem ** while **
 7910 gosub 5800: rem getsym
-7920 gosub ...: rem condition
+7920 gosub 8300: rem condition
 7930 ex$="do":gosub 5400 :rem expect
 7940 gosub 7000: rem statement
 7950 return
 
 8000 rem *** expression ***
-8010 print "expressions are not yet implemented":stop
+8010 if sy$="-" then gosub 5800:goto 8030
+8020 if sy$="+" then gosub 5800
+8030 gosub 8100: rem term
+8040 if sy$="-" or sy$="+" then 8010
+8060 return
 
+8100 rem ** term **
+8110 gosub 8200: rem factor
+8120 if sy$="*" or sy$="/" then gosub 5800:goto 8110
+8130 return
+
+8200 rem ** factor **
+8210 if sy$="id" then gosub 5800:return 
+8220 if sy$="num" then gosub 5800:return
+8230 if sy$="(" then gosub 5800:gosub 8000:ex$=")":gosub 5400:return
+8240 ex$="identifier, expression or '('": gosub 5400
+8250 stop
+
+8300 rem *** condition ***
+8310 if sy$="odd" then gosub 5800:gosub 8000:return
+8320 gosub 8000
+8330 if sy$="=" or sy$="#" or sy$="<" then 8360
+8340 if sy$="<=" or sy$<>">" or sy$=">=" then 8360
+8350 ex$="=,#,<,>,<=,>=":gosub 5400:stop
+8360 gosub 5800:gosub 8000
+8370 return
+ 
 
 10000 data 11:rem number of reserved words
 10010 data "const","var","procedure","call","begin","end","if","then"
