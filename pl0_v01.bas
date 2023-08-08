@@ -47,26 +47,26 @@
 
 5500 rem *** initialisation ***
 5510 print "initialising...":print
-5520 read nrw
-5530 dim rw$(nrw-1)
+5520 read nrw:rem number of reserved words
+5530 dim rw$(nrw-1):rem list of reserved wors
 5540 for i=0 to nrw-1: read rw$(i):next
 5590 return
 
 5600 rem *** getch ***
-5610 ea=ea+1:ch=peek(ea)
-5630 if ch=0 then print:ea=ea+5:goto 5610
+5610 ea=ea+1:ch=peek(ea):rem get lookahead character
+5630 if ch=0 then print:ea=ea+5:goto 5610:rem eol,skip to next
 5640 ch$=chr$(ch)
 5645 if ch$="@" then stop:rem debug
-5650 print ch$;
+5650 print ch$; :rem print lookahead character 
 5660 return
 
 5799 rem ---------- scanner ----------
 
 5800 rem *** getsym ***
-5810 if ch$=" " then gosub 5600:goto 5810
-5820 if ch$>="0" and ch$<="9" then 5900
-5830 if ch$>="a" and ch$<="z" then 5950
-5840 sy$ = ch$:gosub 5600
+5810 if ch$=" " then gosub 5600:goto 5810: rem skip whitespace
+5820 if ch$>="0" and ch$<="9" then 5900: rem number
+5830 if ch$>="a" and ch$<="z" then 5950: rem identifier (or reserved word)
+5840 sy$ = ch$:gosub 5600:rem getch
 5850 if sy$=":" and ch$="=" then sy$=":=":gosub 5600
 5860 if sy$="<" and ch$="=" then sy$="<=":gosub 5600
 5870 if sy$=">" and ch$="=" then sy$=">=":gosub 5600
@@ -75,15 +75,15 @@
 5900 rem ** number **
 5910 sy$="num":num=0
 5920 if ch$<"0" or ch$>"9" then return
-5930 num=num*10+val(ch$):gosub 5600
+5930 num=num*10+val(ch$):gosub 5600:rem getch
 5940 goto 5920
 
 5950 rem ** ident **
 5960 sy$="id":id$=""
 5970 if (ch$<"a" or ch$>"z") and (ch$<"0" or ch$>"9") then 6000
-5980 id$=id$+ch$:gosub 5600
+5980 id$=id$+ch$:gosub 5600:rem getch
 5990 goto 5970
-6000 for i=0 to nrw-1 
+6000 for i=0 to nrw-1: rem test for reserved word
 6010 if rw$(i)=id$ then sy$=id$
 6020 next i
 6030 return
@@ -176,29 +176,29 @@
 
 8000 rem *** expression ***
 8010 if sy$="-" then gosub 5800:goto 8030
-8020 if sy$="+" then gosub 5800
+8020 if sy$="+" then gosub 5800:rem getsym
 8030 gosub 8100: rem term
 8040 if sy$="-" or sy$="+" then 8010
 8060 return
 
 8100 rem ** term **
 8110 gosub 8200: rem factor
-8120 if sy$="*" or sy$="/" then gosub 5800:goto 8110
+8120 if sy$="*" or sy$="/" then gosub 5800:goto 8110:rem getsym
 8130 return
 
 8200 rem ** factor **
-8210 if sy$="id" then gosub 5800:return 
+8210 if sy$="id" then gosub 5800:return:rem getsym
 8220 if sy$="num" then gosub 5800:return
 8230 if sy$="(" then gosub 5800:gosub 8000:ex$=")":gosub 5400:return
 8240 ex$="identifier, expression or '('": gosub 5400
 8250 stop
 
 8300 rem *** condition ***
-8310 if sy$="odd" then gosub 5800:gosub 8000:return
+8310 if sy$="odd" then gosub 5800:gosub 8000:return:rem getsym,expression
 8320 gosub 8000
 8330 if sy$="=" or sy$="#" or sy$="<" then 8360
 8340 if sy$="<=" or sy$=">" or sy$=">=" then 8360
-8350 ex$="=,#,<,>,<=,>=":gosub 5400:stop
+8350 ex$="=,#,<,>,<=,>=":gosub 5400:stop:rem expect
 8360 gosub 5800:gosub 8000
 8370 return
  
