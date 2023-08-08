@@ -37,26 +37,26 @@
 5310 gosub 5600:rem getch
 5320 gosub 5800:rem getsym
 5340 gosub 6200:rem block
-5350 if sy$<>"." then print "error: '.' expected but ";sy$;"
+5350 if sy$<>"." then print "error: '.' expected but ";sy$;" found":stop
 5360 print:print "parsing succesfull"
 5370 end
 
 5400 rem *** expect ***
-5410 if ex$<>sy$ then print "error: '";ex$;"' expected but '";sy$;"' found":stop
-5420 gosub 5800: rem getsym
-5430 return
+5410 if ex$=sy$ then gosub 5800:return: rem getsym
+5420 print:print "error: ";ex$;" expected but ";sy$;" found":stop
 
 5500 rem *** initialisation ***
 5510 print "initialising...":print
 5520 read nrw
 5530 dim rw$(nrw-1)
-5530 for i=0 to nrw-1: read rw$(i):next
+5540 for i=0 to nrw-1: read rw$(i):next
 5590 return
 
 5600 rem *** getch ***
 5610 ea=ea+1:ch=peek(ea)
 5630 if ch=0 then print:ea=ea+5:goto 5610
 5640 ch$=chr$(ch)
+5645 if ch$="@" then stop:rem debug
 5650 print ch$;
 5660 return
 
@@ -197,7 +197,7 @@
 8310 if sy$="odd" then gosub 5800:gosub 8000:return
 8320 gosub 8000
 8330 if sy$="=" or sy$="#" or sy$="<" then 8360
-8340 if sy$="<=" or sy$<>">" or sy$=">=" then 8360
+8340 if sy$="<=" or sy$=">" or sy$=">=" then 8360
 8350 ex$="=,#,<,>,<=,>=":gosub 5400:stop
 8360 gosub 5800:gosub 8000
 8370 return
