@@ -36,6 +36,7 @@
 5100 rem *** compiler settings ***
 5110 ea=2384:rem editor address of first '"' in editor
 5120 ni=20:rem max number of identifiers
+5130 ns=2:rem max of recursion stack
 5290 rem *** end of compiler settings
 
 5299 rem ---------- main ----------
@@ -49,6 +50,7 @@
 5370 print:print" identifier table:":print
 5375 print "name","class","level","value"
 5376 print "----","-----","-----","-----"
+5378 if ip=0 then print "empty":goto 5390
 5380 for i=0 to ip-1:print in$(i),ic$(i),il(i),iv(i):next
 5390 end
 
@@ -68,6 +70,7 @@
 5550 dim in$(ni-1),ic$(ni-1),il(ni-1),iv(ni-1):ip=0:
 5560 rem identifier name,class,level,value and pointer
 5570 lv=0: rem level
+5580 dim rs(ns-1):sp=0:rem recursionstack and pointer 
 5590 return
 
 5600 rem *** getch ***
@@ -109,13 +112,15 @@
 6199 rem ---------- parser ----------
 
 6200 rem *** block ***
-6210 lv=lv+1:oip=ip:rem probably recursion problem !
+6210 lv=lv+1
+6215 rs=ip:gosub 8600:rem push ip
 6220 if sy$="const" then gosub 6300
 6230 if sy$="var" then gosub 6500
 6240 if sy$="procedure" then gosub 6700: goto 6240
 6250 gosub 7000:rem statement
-6255 lv=lv-1:ip=oip
-6260 return
+6260 lv=lv-1
+6270 gosub 8700:ip=rs:rem pull ip 
+6280 return
 
 6300 rem ** const **
 6305 ic$="const":il=lv
@@ -249,6 +254,18 @@
 8530 if in$<>in$(i) then 8520
 8540 ic$=ic$(i):il=il(i):iv=iv(i)
 8550 return
+
+8599 rem ---------- recursion stack ----------
+
+8600 rem *** push ***
+8610 if sp>=ns then er$="recursion stack overflow":goto 5450
+8620 rs(sp)=rs:sp=sp+1
+8630 return
+
+8700 rem *** pull ***
+8710 if sp<=0 then er$="recursion stack underflow":goto 5450
+8720 sp=sp-1:rs=rs(sp)
+8730 return
 
 9999 rem ---------- reserved words ----------
 
