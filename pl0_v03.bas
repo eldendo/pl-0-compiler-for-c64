@@ -8,6 +8,7 @@
 70 * do not remove or change header   *
 80 ************************************
 
+
 100" const a=69, prom=138;
 110" var b,test;
 115"
@@ -27,7 +28,6 @@
 310"   test := 3;
 320"   call double
 500" end.
-
 
 
 4000 print " +------------------------------------+"
@@ -107,6 +107,14 @@
 5230 ba=s(ba):cl=cl-1
 5240 goto 5220
 
+5299 rem ---------- code generator ----------
+
+5300 rem *** generate ***
+5310 if p>=cs then er$="code area exceeded":goto 5450
+5320 cf$(p)=cf$:cl(p)=cl:ca$(p)=ca$
+5330 p=p+1
+5340 return
+
 5399 rem ---------routines -------------
 
 5400 rem *** expect ***
@@ -128,6 +136,7 @@
 5570 dim rs(ns-1):sp=0:rem recursionstack and pointer 
 5575 dim s(ss-1):rem stack
 5580 dim cf$(cs-1),cl(cs-1),ca$(cs-1):rem codespace
+5585 p=0: rem program counter
 5590 return
 
 5600 rem *** getch ***
