@@ -9,17 +9,26 @@
 80 ************************************
 
 
-100" var i;
-110" begin
-120"   i:=4;
-130"   while i>=0 do
-140"     begin
-150"       !i;
-160"       i:=i-1
-170"     end
-180" end.
+100" const max=10;
+105" var i;
+106"
+110" procedure prtsqr;
+115" var j;
+120" begin
+130"   j:=i*i;
+140"   !i;
+150"   !j
+160" end;
+170"
+180" begin
+190"   i:=0;
+200"   while i<=max do 
+210"     begin 
+220"       call prtsqr; 
+230"       i:=i+1 
+240"     end
+250" end.
 
-3000 rem cf$="lit":cl=0:ca$=str$(iv):gosub 5300
 
 4000 print " +------------------------------------+"
 4010 print " !       pl/0 compiler for c64        !"
@@ -27,11 +36,11 @@
 4030 print " +------------------------------------!"
 
 4100 rem *** settings ***
-4005 db=1:rem debug value
+4005 db=0:rem debug value
 4110 ea=2384:rem editor address of first '"' in editor
 4120 ni=20:rem max number of identifiers
-4130 ns=10:rem max number in recursion stack
-4140 ss=10:rem vm stacksize
+4130 ns=20:rem max number in recursion stack
+4140 ss=20:rem vm stacksize
 4150 cs=30:rem vm code size
 4290 rem *** end of settings ***
 
@@ -44,25 +53,26 @@
 4320 gosub 5800:rem getsym
 4340 gosub 6200:rem block
 4350 if sy$<>"." then er$= "'.' expected":goto 5450: rem error
-4355 cf$="jmp":cl=0:ca$="0":gosub 5300:rem gen
-4360 print:print "parsing successful"
+4355 cf$="jmp":cl=0:ca=0:gosub 5300:rem gen
+4360 print:print "compiling successful"
 4365 rem end
 
-4500 rem ------ p-code machine ------
+4400 rem ------ show code -------
 
-4510 print " +------------------------------------+"
-4520 print " !      p-code machine for c-64       !"
-4530 print " !     (c) 2023 ir. m. dendooven      !"
-4540 print " +------------------------------------+"
-4550 print
+4405 print
+4410 for i=0 to p-1
+4420 print i;cf$(i);cl(i);ca(i)
+4430 next i
+
+4500 rem ------ p-code machine ------
 
 4560 print "executing":print
 4570 t=0:b=1:p=0:rem stackpointer,basepointer,programcounter
 4580 s(1)=0:s(2)=0:s(3)=0:rem be sure begin stack empty
 
 4600 rem *** fetch execute loop *** 
-4610 cf$=cf$(p):cl=cl(p):ca$=ca$(p):ca=val(ca$)
-4612 if db>0 then print,,"p=";p;" c=(";cf$;cl;ca$;")"
+4610 cf$=cf$(p):cl=cl(p):ca=ca(p)
+4612 if (db and 1) = 1 then print,,"p=";p;" c=(";cf$;cl;ca;")"
 4615 p=p+1
 4620 if cf$="lit" then t=t+1:s(t)=ca
 4630 if cf$="opr" then gosub 5000
@@ -71,28 +81,29 @@
 4660 if cf$="cal" then gosub 5200:s(t+1)=ba:s(t+2)=b:s(t+3)=p:b=t+1:p=ca
 4670 if cf$="ins" then t=t+ca 
 4680 if cf$="jmp" then p=ca
-4690 if cf$="jpc" then t=t-1:if s(t+1)=0 then p=val(ca$)
-4695 if db>0 then for i=0 to t:print s(i);:next:print
+4690 if cf$="jpc" then t=t-1:if s(t+1)=0 then p=ca
+4695 if (db and 1) = 1 then for i=0 to t:print s(i);:next:print
 4700 if p<>0 then 4610
 4710 print:print"done
 4720 end
 
 5000 rem ** opr **
-5005 if ca$="return" then t=b-1:p=s(t+3):b=s(t+2)
-5010 if ca$="neg" then s(t)=-s(t)
-5020 if ca$="+" then t=t-1:s(t)=s(t)+s(t+1)
-5030 if ca$="-" then t=t-1:s(t)=s(t)-s(t+1)
-5040 if ca$="*" then t=t-1:s(t)=s(t)*s(t+1)
-5050 if ca$="/" then t=t-1:s(t)=s(t)/s(t+1)
-5060 if ca$="odd" then s(t)=-(s(t) and 1)
-5080 if ca$="=" then t=t-1:s(t)=s(t)=s(t+1)
-5090 if ca$="#" then t=t-1:s(t)=s(t)<>s(t+1)
-5100 if ca$="<" then t=t-1:s(t)=s(t)<s(t+1)
-5110 if ca$=">=" then t=t-1:s(t)=s(t)>=s(t+1)
-5120 if ca$=">" then t=t-1:s(t)=s(t)>s(t+1)
-5130 if ca$="<=" then t=t-1:s(t)=s(t)<=s(t+1)
-5140 if ca$="?" then t=t+1:input s(t)
-5150 if ca$="!" then print ">>>";s(t):t=t-1
+5005 if ca=0 then t=b-1:p=s(t+3):b=s(t+2)
+5010 if ca=1 then s(t)=-s(t)
+5020 if ca=2 then t=t-1:s(t)=s(t)+s(t+1)
+5030 if ca=3 then t=t-1:s(t)=s(t)-s(t+1)
+5040 if ca=4 then t=t-1:s(t)=s(t)*s(t+1)
+5050 if ca=5 then t=t-1:s(t)=s(t)/s(t+1)
+5060 if ca=6 then s(t)=-(s(t) and 1)
+5070 rem no 7
+5080 if ca=8 then t=t-1:s(t)=s(t)=s(t+1)
+5090 if ca=9 then t=t-1:s(t)=s(t)<>s(t+1)
+5100 if ca=10 then t=t-1:s(t)=s(t)<s(t+1)
+5110 if ca=11 then t=t-1:s(t)=s(t)<=s(t+1)
+5120 if ca=12 then t=t-1:s(t)=s(t)>s(t+1)
+5130 if ca=13 then t=t-1:s(t)=s(t)>=s(t+1)
+5140 if ca=14 then t=t+1:input s(t)
+5150 if ca=15 then print ">>>";s(t):t=t-1
 5160 return
 
 5200 rem ** calculate base (b,cl)->ba **
@@ -105,8 +116,7 @@
 
 5300 rem *** generate ***
 5310 if p>=cs then er$="code area exceeded":goto 5450
-5320 cf$(p)=cf$:cl(p)=cl:ca$(p)=ca$
-5325 rem print"gen: p=";p;" c=(";cf$;cl;ca$;")"
+5320 cf$(p)=cf$:cl(p)=cl:ca(p)=ca
 5330 p=p+1
 5340 return
 
@@ -130,9 +140,8 @@
 5565 lv=0:rem level
 5570 dim rs(ns-1):sp=0:rem recursionstack and pointer 
 5575 dim s(ss-1):rem stack
-5580 dim cf$(cs-1),cl(cs-1),ca$(cs-1):rem codespace
+5580 dim cf$(cs-1),cl(cs-1),ca(cs-1):rem codespace
 5585 p=0: rem program counter
-5586 op$=" "
 5590 return
 
 5600 rem *** getch ***
@@ -174,16 +183,20 @@
 6199 rem ---------- parser ----------
 
 6200 rem *** block ***
-6210 lv=lv+1:vn=2:rem inc level,reset varnum
+6205 rs=l1:gosub 9600: rem push l1
+6210 lv=lv+1:vn=3:rem inc level,reset varnum
 6215 rs=ip:gosub 9600:rem push ip
 6220 if sy$="const" then gosub 6300
 6230 if sy$="var" then gosub 6500
 6235 rem gosub 9800: rem debug id table
-6237 cf$="ins":cl=0:ca$=str$(vn):gosub 5300:rem make place on stack
+6237 cf$="ins":cl=0:ca=vn:gosub 5300:rem make place on stack
+6238 l1=p:cf$="jmp":cl=0:ca=0:gosub 5300:rem jump to proper code
 6240 if sy$="procedure" then gosub 6700: goto 6240
+6245 ca(l1)=p
 6250 gosub 7000:rem statement
 6260 lv=lv-1
 6270 gosub 9700:ip=rs:rem pull ip 
+6275 gosub 9700:l1=rs:rem pull l1
 6280 return
 
 6300 rem ** const **
@@ -207,33 +220,40 @@
 6570 return
 
 6700 rem ** procedure **
-6705 ic$="procedure":il=lv:iv=0
+6705 ic$="procedure":il=lv:iv=p
 6710 gosub 5800: rem getsym
 6720 in$=name$:ex$="id":gosub 5400: rem expect
 6730 gosub 9400:rem add identifier
 6750 ex$=";":gosub 5400
 6770 gosub 6200:rem block
 6790 ex$=";":gosub 5400
+6795 cf$="opr":cl=0:ca=0:gosub 5300:rem return
 6800 return
 
 7000 rem *** statement ***
-7010 if sy$="id" then 7200: rem assign
-7020 if sy$="call" then 7400
-7030 if sy$="?" then 7500
-7040 if sy$="!" then 7600
-7050 if sy$="begin" then 7700
-7060 if sy$="if" then 7800
-7070 if sy$="while" then 7900
+7005 rs=l1:gosub 9600: rem push
+7006 rs=l2:gosub 9600: rem push
+7010 if sy$="id" then gosub 7200:goto 7100:rem assign
+7020 if sy$="call" then gosub 7400:goto 7100
+7030 if sy$="?" then gosub 7500:goto 7100
+7040 if sy$="!" then gosub 7600:goto 7100
+7050 if sy$="begin" then gosub 7700:goto 7100
+7060 if sy$="if" then gosub 7800:goto 7100
+7070 if sy$="while" then gosub 7900:goto 7100
 7080 ex$="statement":gosub 5400:rem expect
 7090 stop
+7100 gosub 9700:l2=rs:rem pull
+7110 gosub 9700:l1=rs:rem pull
+7120 return
 
 7200 rem ** assign **
 7204 in$=name$:gosub 9500:rem get identifier
 7206 if ic$<>"var" then er$=in$+" is not a variable":goto5450
 7210 gosub 5800: rem getsym
 7220 ex$=":=":gosub 5400: rem expect
+7225 tl=lv-il:tv=iv: rem temporary storage avoiding garbage
 7230 gosub 8000: rem expression !!! varcall in expression -> garbage
-7235 cf$="sto":cl=lv-il:ca$=str$(iv):gosub 5300
+7235 cf$="sto":cl=tl:ca=tv:gosub 5300
 7240 return
 
 7400 rem ** call **
@@ -242,6 +262,7 @@
 7420 ex$="id":gosub 5400: rem expect
 7430 gosub 9500: rem get identifier
 7440 if ic$<>"procedure" then er$="call to var or const":goto 5450 
+7445 cf$="cal":cl=lv-il:ca=iv:gosub 5300
 7450 return
 
 7500 rem ** ? **
@@ -249,14 +270,14 @@
 7520 in$=name$:ex$="id":gosub 5400: rem expect
 7530 gosub 9500:rem get identifier
 7540 if ic$<>"var" then er$="var expected":goto 5450
-7550 cf$="opr":cl=0:ca$="?":gosub 5300
-7560 cf$="sto":cl=lv-il:ca$=str$(iv):gosub 5300
+7550 cf$="opr":cl=0:ca=14:gosub 5300
+7560 cf$="sto":cl=lv-il:ca=iv:gosub 5300
 7590 return
 
 7600 rem ** ! **
 7610 gosub 5800: rem getsym
 7620 gosub 8000: rem expression
-7625 cf$="opr":cl=0:ca$="!":gosub 5300
+7625 cf$="opr":cl=0:ca=15:gosub 5300
 7630 return
 
 7700 rem ** begin **
@@ -267,68 +288,81 @@
 7750 return
 
 7800 rem ** if ** !!! labels as locals ???
+7805 rem rs=l1:gosub 9600: rem push
 7810 gosub 5800: rem getsym
 7820 gosub 9000: rem condition
 7830 ex$="then":gosub 5400 :rem expect
-7835 l1=p:cf$="jpc":cl=0:ca$=str$(0):gosub 5300
+7835 l1=p:cf$="jpc":cl=0:ca=0:gosub 5300
 7840 gosub 7000: rem statement
-7845 ca$(l1)=str$(p)
+7845 ca(l1)=p
+7847 rem gosub 9700:l1=rs:rem pull
 7850 return
 
-7900 rem ** while ** !!! labels as locals ???
+7900 rem ** while **
+7905 rem rs=l1:gosub 9600: rem push
+7906 rem rs=l2:gosub 9600: rem push
 7910 gosub 5800: rem getsym
 7915 l1=p
 7920 gosub 9000: rem condition
-7925 l2=p:cf$="jpc":cl=0:ca$=str$(0):gosub 5300
+7925 l2=p:cf$="jpc":cl=0:ca=0:gosub 5300
 7930 ex$="do":gosub 5400 :rem expect
 7940 gosub 7000: rem statement
-7945 cf$="jmp":cl=0:ca$=str$(l1):gosub 5300
-7947 ca$(l2)=str$(p)
+7945 cf$="jmp":cl=0:ca=l1:gosub 5300
+7947 ca(l2)=p
+7948 rem gosub 9700:l2=rs:rem pull
+7949 rem gosub 9700:l1=rs:rem pull
 7950 return
 
 8000 rem *** expression ***
-8003 rs=asc(op$):gosub 9600: rem push
-8005 op$="+"
-8010 if sy$="+" or sy$="-" then op$=sy$:gosub 5800:rem getsym
+8003 rs=op:gosub 9600: rem push
+8005 if sy$="+" then op=2:gosub 5800:goto 8030
+8010 if sy$="-" then op=3:gosub 5800:goto 8030
 8030 gosub 8100:rem term
-8035 if op$="-" then cf$="opr":cl=0:ca$="neg":gosub 5300
-8040 if sy$<>"-" and sy$<>"+" then gosub 9700:op$=chr$(rs):return:rem pull
-8060 op$=sy$:gosub 5800:gosub 8100:rem getsym,term
-8070 cf$="opr":cl=0:ca$=op$:gosub 5300
+8035 if op=3 then cf$="opr":cl=0:ca=1:gosub 5300: rem '-' -> 'neg'
+8040 if sy$<>"-" and sy$<>"+" then gosub 9700:op=rs:return:rem pull
+8050 if sy$="+" then op=2:goto 8065
+8060 if sy$="-" then op=3
+8065 gosub 5800:gosub 8100:rem getsym,term
+8070 cf$="opr":cl=0:ca=op:gosub 5300
 8080 goto 8040
 
 8100 rem ** term **  
-8105 rs=asc(op$):gosub 9600: rem push
+8105 rs=op:gosub 9600: rem push
 8110 gosub 8200: rem factor
-8120 if sy$<>"*" and sy$<>"/" then gosub 9700:op$=chr$(rs):return:rem pull 
-8122 op$=sy$:gosub 5800:gosub 8200:rem getsym,factor
-8125 cf$="opr":cl=0:ca$=op$:gosub 5300
+8120 if sy$<>"*" and sy$<>"/" then gosub 9700:op=rs:return:rem pull 
+8122 if sy$="*" then op=4:goto 8123
+8123 if sy$="/" then op=5
+8124 gosub 5800:gosub 8200:rem getsym,factor
+8125 cf$="opr":cl=0:ca=op:gosub 5300
 8130 goto 8120
 
 8200 rem ** factor **
 8210 if sy$="id" then 8260
-8220 if sy$="num" then cf$="lit":cl=0:ca$=str$(num):gosub 5300:goto 8280
+8220 if sy$="num" then cf$="lit":cl=0:ca=num:gosub 5300:goto 8280
 8230 if sy$="(" then gosub 5800:gosub 8000:ex$=")":gosub 5400:return
 8240 ex$="identifier, literal or '('": gosub 5400
 8250 stop
 8260 in$=name$:gosub 9500:rem get identifier
 8270 if ic$="procedure" then er$=in$+" is not an expression":goto 5450
-8275 if ic$="const" then cf$="lit":cl=0:ca$=str$(iv):gosub 5300
-8277 if ic$="var" then cf$="lod":cl=lv-il:ca$=str$(iv):gosub 5300
+8275 if ic$="const" then cf$="lit":cl=0:ca=iv:gosub 5300
+8277 if ic$="var" then cf$="lod":cl=lv-il:ca=iv:gosub 5300
 8280 gosub 5800:return:rem getsym
 
-
-9000 rem *** condition ***  !!!! problem asc of >= !!!
-9005 rs=asc(op$):gosub 9600: rem push
-9010 if sy$="odd" then 9060
+9000 rem *** condition ***
+9005 rs=op:gosub 9600: rem push
+9010 if sy$="odd" then op=6:goto 9070
 9020 gosub 8000:rem expression
-9030 if sy$="=" or sy$="#" or sy$="<" then 9060
-9040 if sy$="<=" or sy$=">" or sy$=">=" then 9060
-9050 ex$="=,#,<,>,<=,>=":gosub 5400:stop:rem expect
-9060 op$=sy$
+9030 if sy$="=" then op=8
+9032 if sy$="#" then op=9
+9034 if sy$="<" then op=10
+9036 if sy$="<=" then op=11
+9038 if sy$=">" then op=12
+9040 if sy$=">=" then op=13
+9045 goto 9070
+9050 ex$="odd,=,#,<,>,<=,>=":gosub 5400:stop:rem expect
 9070 gosub 5800:gosub 8000:rem getsym,expression
-9080 cf$="opr":cl=0:ca$=op$:gosub 5300
-9090 gosub 9700:op$=chr$(rs):rem pull
+9080 cf$="opr":cl=0:ca=op:gosub 5300
+9090 gosub 9700:op=rs:rem pull
 9100 return
 
 9399 rem ---------- identifers ----------
@@ -369,7 +403,7 @@
 
 9900 rem *** test p-code ***
 9910 p=0
-9920 read cf$(p),cl(p),ca$(p)
+9920 read cf$(p),cl(p),ca(p)
 9930 if cf$(p)="end" then return
 9940 p=p+1
 9950 goto 9520
