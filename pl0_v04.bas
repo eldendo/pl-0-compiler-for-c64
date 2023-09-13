@@ -13,11 +13,11 @@
 105" var i;
 106"
 110" procedure prtsqr;
-115" var j;
+115" var sqr;
 120" begin
-130"   j:=i*i;
+130"   sqr:=i*i;
 140"   !i;
-150"   !j
+150"   !sqr
 160" end;
 170"
 180" begin
@@ -36,7 +36,7 @@
 4030 print " +------------------------------------!"
 
 4100 rem *** settings ***
-4005 db=0:rem debug value
+4105 db=0:rem debug value
 4110 ea=2384:rem editor address of first '"' in editor
 4120 ni=20:rem max number of identifiers
 4130 ns=20:rem max number in recursion stack
@@ -65,6 +65,7 @@
 4430 next i
 
 4500 rem ------ p-code machine ------
+4510 rem -- translated to basic from N. Wirth's P-code machine --
 
 4560 print "executing":print
 4570 t=0:b=1:p=0:rem stackpointer,basepointer,programcounter
@@ -79,7 +80,7 @@
 4640 if cf$="lod" then t=t+1:gosub 5200:s(t)=s(ba+ca)
 4650 if cf$="sto" then gosub 5200:s(ba+ca)=s(t):t=t-1
 4660 if cf$="cal" then gosub 5200:s(t+1)=ba:s(t+2)=b:s(t+3)=p:b=t+1:p=ca
-4670 if cf$="ins" then t=t+ca 
+4670 if cf$="int" then t=t+ca 
 4680 if cf$="jmp" then p=ca
 4690 if cf$="jpc" then t=t-1:if s(t+1)=0 then p=ca
 4695 if (db and 1) = 1 then for i=0 to t:print s(i);:next:print
@@ -183,16 +184,16 @@
 6199 rem ---------- parser ----------
 
 6200 rem *** block ***
-6205 rs=l1:gosub 9600: rem push l1
+6205 rs=l1:gosub 9600: rem push label l1
 6210 lv=lv+1:vn=3:rem inc level,reset varnum
 6215 rs=ip:gosub 9600:rem push ip
 6220 if sy$="const" then gosub 6300
 6230 if sy$="var" then gosub 6500
 6235 rem gosub 9800: rem debug id table
-6237 cf$="ins":cl=0:ca=vn:gosub 5300:rem make place on stack
-6238 l1=p:cf$="jmp":cl=0:ca=0:gosub 5300:rem jump to proper code
+6237 cf$="int":cl=0:ca=vn:gosub 5300:rem make place on stack
+6238 l1=p:cf$="jmp":cl=0:ca=0:gosub 5300:rem mark label,jump to proper code
 6240 if sy$="procedure" then gosub 6700: goto 6240
-6245 ca(l1)=p
+6245 ca(l1)=p:rem adjust code on label l1
 6250 gosub 7000:rem statement
 6260 lv=lv-1
 6270 gosub 9700:ip=rs:rem pull ip 
@@ -203,11 +204,11 @@
 6305 ic$="const":il=lv
 6310 gosub 5800: rem getsym
 6320 in$=name$:ex$="id":gosub 5400: rem expect
-6340 ex$="=":gosub 5400
-6360 iv=num:ex$="num":gosub 5400
+6340 ex$="=":gosub 5400:rem expect
+6360 iv=num:ex$="num":gosub 5400:rem expect
 6370 gosub 9400:rem add identifier
 6380 if sy$="," then 6310
-6390 ex$=";":gosub 5400
+6390 ex$=";":gosub 5400:rem expect
 6410 return
 
 6500 rem ** var **
@@ -216,7 +217,7 @@
 6520 in$=name$:ex$="id":gosub 5400: rem expect
 6530 iv=vn:vn=vn+1:gosub 9400:rem add identifier
 6540 if sy$="," then 6510
-6550 ex$=";":gosub 5400
+6550 ex$=";":gosub 5400:rem expect
 6570 return
 
 6700 rem ** procedure **
@@ -224,15 +225,15 @@
 6710 gosub 5800: rem getsym
 6720 in$=name$:ex$="id":gosub 5400: rem expect
 6730 gosub 9400:rem add identifier
-6750 ex$=";":gosub 5400
+6750 ex$=";":gosub 5400:rem expect
 6770 gosub 6200:rem block
-6790 ex$=";":gosub 5400
+6790 ex$=";":gosub 5400:rem expect
 6795 cf$="opr":cl=0:ca=0:gosub 5300:rem return
 6800 return
 
 7000 rem *** statement ***
-7005 rs=l1:gosub 9600: rem push
-7006 rs=l2:gosub 9600: rem push
+7005 rs=l1:gosub 9600: rem push label
+7006 rs=l2:gosub 9600: rem push label
 7010 if sy$="id" then gosub 7200:goto 7100:rem assign
 7020 if sy$="call" then gosub 7400:goto 7100
 7030 if sy$="?" then gosub 7500:goto 7100
@@ -242,8 +243,8 @@
 7070 if sy$="while" then gosub 7900:goto 7100
 7080 ex$="statement":gosub 5400:rem expect
 7090 stop
-7100 gosub 9700:l2=rs:rem pull
-7110 gosub 9700:l1=rs:rem pull
+7100 gosub 9700:l2=rs:rem pull label
+7110 gosub 9700:l1=rs:rem pull label
 7120 return
 
 7200 rem ** assign **
@@ -287,20 +288,16 @@
 7740 ex$="end":gosub 5400: rem expect
 7750 return
 
-7800 rem ** if ** !!! labels as locals ???
-7805 rem rs=l1:gosub 9600: rem push
+7800 rem ** if ** 
 7810 gosub 5800: rem getsym
 7820 gosub 9000: rem condition
 7830 ex$="then":gosub 5400 :rem expect
 7835 l1=p:cf$="jpc":cl=0:ca=0:gosub 5300
 7840 gosub 7000: rem statement
 7845 ca(l1)=p
-7847 rem gosub 9700:l1=rs:rem pull
 7850 return
 
 7900 rem ** while **
-7905 rem rs=l1:gosub 9600: rem push
-7906 rem rs=l2:gosub 9600: rem push
 7910 gosub 5800: rem getsym
 7915 l1=p
 7920 gosub 9000: rem condition
@@ -309,8 +306,6 @@
 7940 gosub 7000: rem statement
 7945 cf$="jmp":cl=0:ca=l1:gosub 5300
 7947 ca(l2)=p
-7948 rem gosub 9700:l2=rs:rem pull
-7949 rem gosub 9700:l1=rs:rem pull
 7950 return
 
 8000 rem *** expression ***
